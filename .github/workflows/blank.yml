@@ -1,4 +1,5 @@
-name: Build Android APK
+
+name: Inspect Android Build
 
 on:
   workflow_dispatch:
@@ -6,44 +7,28 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
-
 jobs:
-  inspect-project:
+  inspect:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install unzip
-        run: sudo apt-get update && sudo apt-get install -y unzip
-
-      - name: Extract project ZIP
+      - name: Extract project
         run: |
-          set -eu
-          ZIP_FILE="$(find . -maxdepth 3 -type f -iname '*.zip' | head -n 1)"
-          if [ -z "$ZIP_FILE" ]; then
-            echo "ERROR: ZIP archive not found"
-            exit 1
-          fi
-          echo "Found archive: $ZIP_FILE"
+          sudo apt-get update
+          sudo apt-get install -y unzip
           mkdir -p extracted
-          unzip -o "$ZIP_FILE" -d extracted
+          unzip -o LiquidGlassLauncher_Project_GitHub_Build.zip -d extracted
 
-      - name: Inspect project structure
+      - name: Show Gradle configuration
         run: |
-          echo "=== PROJECT FILES ==="
-          find extracted -maxdepth 5 -type f | sort | head -200
-          echo "=== BUILD FILES ==="
-          find extracted -type f \( \
-            -name 'gradlew' -o \
-            -name 'settings.gradle' -o \
-            -name 'settings.gradle.kts' -o \
-            -name 'build.gradle' -o \
-            -name 'build.gradle.kts' -o \
-            -name 'AndroidManifest.xml' -o \
-            -name 'package.json' -o \
-            -name 'capacitor.config.json' \
-          \) -print
+          cd extracted/LiquidGlassLauncher
+          echo "=== ROOT BUILD ==="
+          cat build.gradle.kts
+          echo "=== APP BUILD ==="
+          cat app/build.gradle.kts
+          echo "=== SETTINGS ==="
+          cat settings.gradle.kts
+          echo "=== GRADLE FILES ==="
+          find . -maxdepth 3 -type f \
+            \( -name 'gradlew' -o -name 'gradle-wrapper.properties' \)
