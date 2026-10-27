@@ -6,16 +6,44 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  inspect-project:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check project files
+      - name: Install unzip
+        run: sudo apt-get update && sudo apt-get install -y unzip
+
+      - name: Extract project ZIP
         run: |
-          echo "Checking repository contents"
-          ls -la
-          find . -maxdepth 3 -type f | head -200
+          set -eu
+          ZIP_FILE="$(find . -maxdepth 3 -type f -iname '*.zip' | head -n 1)"
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ERROR: ZIP archive not found"
+            exit 1
+          fi
+          echo "Found archive: $ZIP_FILE"
+          mkdir -p extracted
+          unzip -o "$ZIP_FILE" -d extracted
+
+      - name: Inspect project structure
+        run: |
+          echo "=== PROJECT FILES ==="
+          find extracted -maxdepth 5 -type f | sort | head -200
+          echo "=== BUILD FILES ==="
+          find extracted -type f \( \
+            -name 'gradlew' -o \
+            -name 'settings.gradle' -o \
+            -name 'settings.gradle.kts' -o \
+            -name 'build.gradle' -o \
+            -name 'build.gradle.kts' -o \
+            -name 'AndroidManifest.xml' -o \
+            -name 'package.json' -o \
+            -name 'capacitor.config.json' \
+          \) -print
